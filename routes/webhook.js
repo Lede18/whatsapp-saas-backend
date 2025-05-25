@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getGPTResponse } = require('../services/openaiService'); // ✅ ACTIVADO
+const { sendWhatsAppMessage } = require('../services/whatsappService');
 
 const VERIFY_TOKEN = "verifica123";
 
@@ -46,8 +47,7 @@ router.post('/', async (req, res) => {
     const prompt = `Eres un asistente para una tienda de recambios. Un cliente escribe: "${text}". Responde con educación y claridad como si fueras parte del equipo de atención.`;
     const aiResponse = await getGPTResponse(prompt);
 
-    console.log("🤖 GPT responde:");
-    console.log(aiResponse);
+    await sendWhatsAppMessage(phone, aiResponse);
 
     // (Próximo paso: enviar respuesta por WhatsApp)
 
