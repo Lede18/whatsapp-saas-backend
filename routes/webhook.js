@@ -20,6 +20,8 @@ router.get('/', (req, res) => {
 
 // Endpoint para recibir mensajes de WhatsApp
 router.post('/', async (req, res) => {
+	console.log("✅ Recibido POST en /webhook");
+console.log("BODY:", JSON.stringify(req.body, null, 2));
   const data = req.body;
 
   console.log("📥 LLEGÓ AL WEBHOOK:", JSON.stringify(data, null, 2));
