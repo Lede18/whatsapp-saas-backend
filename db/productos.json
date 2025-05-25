@@ -2,13 +2,21 @@
   {
     "nombre": "MANGUITO ELECTROSOLDABLE PE 100 - 32",
     "referencia": "1850032"
+	"alias": ["union electrosoldable 32", "manguito 32"]
   },
   {
-    "nombre": "MANGUITO ELECTR. PE 100 - 63",
+    "nombre": "MANGUITO ELECTROSOLDABLE PE 100 - 63",
     "referencia": "1850063"
+	"alias": ["union electrosoldable 63", "manguito 63"]
   },
   {
-    "nombre": "REDUCCION ELEC. PE 100 - 125-110",
+    "nombre": "REDUCCION ELECTROSOLDABLE PE 100 - 125-110",
     "referencia": "1853127"
+	"alias": ["para hacer pequeño", "de 125 a 110 fundido"]
+  }
+  {
+    "nombre": "Ml. TUBERIA PE. AD. (PE-100) 32 - 10 AT (BARRA)",
+    "referencia": "1343032"
+	"alias": ["Tubo en barra polietile 32", "barra de polietile de 32"]
   }
 ]
