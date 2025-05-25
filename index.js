@@ -1,14 +1,18 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const webhookRoutes = require('./routes/webhook');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Middleware para parsear JSON
-app.use(bodyParser.json());
+// Middleware nativo para parsear JSON
+app.use(express.json());
 
-// Rutas
+// Ruta base de prueba (evita que Railway cierre el contenedor por inactividad)
+app.get('/', (req, res) => {
+  res.send('🟢 Backend activo');
+});
+
+// Rutas de Webhook
 app.use('/webhook', webhookRoutes);
 
 // Inicio del servidor
