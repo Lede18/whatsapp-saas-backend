@@ -44,7 +44,7 @@ router.post('/', async (req, res) => {
     console.log(`✉️ Mensaje: ${text}`);
 
     // 🤖 GPT: generamos respuesta automática
-    const prompt = `Eres un asistente para una tienda de recambios. Un cliente escribe: "${text}". Responde con educación y claridad como si fueras parte del equipo de atención.`;
+    const prompt = `Eres un asistente para una tienda de suministros hidraulicos y conducciones de agua llamada SAIGA. Un cliente escribe: "${text}". Responde con educación y claridad como si fueras parte del equipo de atención e intenta ser breve en tus respuestas`;
     const aiResponse = await getGPTResponse(prompt);
 
     await sendWhatsAppMessage(phone, aiResponse);
