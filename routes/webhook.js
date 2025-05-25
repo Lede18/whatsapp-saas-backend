@@ -1,25 +1,28 @@
 const express = require('express');
 const router = express.Router();
-const { getClientByPhone } = require('../services/clientService');
-const { getGPTResponse } = require('../services/openaiService');
+const { getGPTResponse } = require('../services/openaiService'); // ✅ ACTIVADO
 
-// Endpoint para verificación del webhook
+const VERIFY_TOKEN = "verifica123";
+
+// 🔁 Verificación del Webhook (GET)
 router.get('/', (req, res) => {
-  const VERIFY_TOKEN = "verifica123";
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
 
   if (mode === 'subscribe' && token === VERIFY_TOKEN) {
     console.log("✅ Webhook verificado por Meta.");
-    res.status(200).send(challenge);
-  } else {
-    res.sendStatus(403);
+    return res.status(200).send(challenge);
   }
+
+  console.warn("❌ Verificación fallida.");
+  return res.sendStatus(403);
 });
 
-// Endpoint para recibir mensajes de WhatsApp
+// 📥 Recepción de mensajes (POST)
 router.post('/', async (req, res) => {
+  console.log("✅ Recibido POST en /webhook");
+
   const data = req.body;
 
   try {
@@ -28,7 +31,7 @@ router.post('/', async (req, res) => {
     const message = change?.value?.messages?.[0];
 
     if (!message) {
-      console.log("⚠️ No hay mensaje válido en el payload.");
+      console.warn("⚠️ No hay mensajes en el payload.");
       return res.sendStatus(200);
     }
 
@@ -39,14 +42,20 @@ router.post('/', async (req, res) => {
     console.log(`📞 De: ${phone}`);
     console.log(`✉️ Mensaje: ${text}`);
 
-    // Aquí puedes continuar con lógica: buscar cliente, responder, etc.
+    // 🤖 GPT: generamos respuesta automática
+    const prompt = `Eres un asistente para una tienda de recambios. Un cliente escribe: "${text}". Responde con educación y claridad como si fueras parte del equipo de atención.`;
+    const aiResponse = await getGPTResponse(prompt);
 
-  } catch (error) {
-    console.error("❌ Error procesando el mensaje:", error);
+    console.log("🤖 GPT responde:");
+    console.log(aiResponse);
+
+    // (Próximo paso: enviar respuesta por WhatsApp)
+
+  } catch (err) {
+    console.error("❌ Error procesando el webhook:", err.message);
   }
 
   res.sendStatus(200);
 });
-
 
 module.exports = router;
