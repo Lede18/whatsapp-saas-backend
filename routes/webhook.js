@@ -54,50 +54,44 @@ router.post('/', async (req, res) => {
     memoriaPedidos[phone].push(text);
 
     const textoNormalizado = text.toLowerCase();
-
-    // 📦 Detectar si el usuario quiere cerrar el pedido solo con articulos del catalogo
-    if (
-  textoNormalizado.includes("enviar pedido") ||
-  textoNormalizado.includes("finalizar") ||
-  textoNormalizado.includes("eso es todo")
-) {
-  const articulosDetectados = memoriaPedidos[phone]
-  .map((texto) => {
-    const textoCliente = texto.toLowerCase();
-
-    const producto = productos.find(p =>
-      textoCliente.includes(p.nombre.toLowerCase()) ||
-      (p.alias && p.alias.some(alias => textoCliente.includes(alias.toLowerCase())))
-    );
-
-    return producto ? `- ${producto.nombre} (${producto.referencia})` : null;
-  })
-  .filter(Boolean);
-
-  const mensajeResumen = articulosDetectados.length
-    ? `Este es tu pedido hasta ahora:\n${articulosDetectados.join("\n")}\n¿Confirmas?`
-    : "No he podido identificar ningún artículo válido en tu pedido. ¿Puedes reformularlo?";
-
-  await sendWhatsAppMessage(phone, mensajeResumen);
-
-  // (opcional) limpiar memoria si se desea
-  // memoriaPedidos[phone] = [];
-
-  return res.sendStatus(200);
-}
-
     const productos = getProductos();
+
+    // 📦 Detectar si el usuario quiere cerrar el pedido
+    if (
+      textoNormalizado.includes("enviar pedido") ||
+      textoNormalizado.includes("finalizar") ||
+      textoNormalizado.includes("eso es todo")
+    ) {
+      const articulosDetectados = memoriaPedidos[phone]
+        .map((texto) => {
+          const textoCliente = texto.toLowerCase();
+          const producto = productos.find(p =>
+            textoCliente.includes(p.nombre.toLowerCase()) ||
+            (p.alias && p.alias.some(alias => textoCliente.includes(alias.toLowerCase())))
+          );
+          return producto ? `- ${producto.nombre} (${producto.referencia})` : null;
+        })
+        .filter(Boolean);
+
+      const mensajeResumen = articulosDetectados.length
+        ? `Este es tu pedido hasta ahora:\n${articulosDetectados.join("\n")}\n¿Confirmas?`
+        : "No he podido identificar ningún artículo válido en tu pedido. ¿Puedes reformularlo?";
+
+      await sendWhatsAppMessage(phone, mensajeResumen);
+      return res.sendStatus(200);
+    }
+
     // 🤖 GPT: generar respuesta en mensajes normales
     const prompt = `Eres un asistente para una tienda de suministros hidráulicos y conducciones de agua llamada SAIGA.
 
-	Este es el catálogo disponible:
-	${productos.map(p => `- ${p.nombre} (${p.referencia})`).join("\n")}
+Este es el catálogo disponible:
+${productos.map(p => `- ${p.nombre} (${p.referencia})`).join("\n")}
 
-	El cliente ha dicho: "${text}".
-	Responde con educación y claridad, intentando relacionar lo que pide con los productos y referencias disponibles.
-	`;
+El cliente ha dicho: "${text}".
+Responde con educación y claridad, intentando relacionar lo que pide con los productos y referencias disponibles.
+`;
+
     const aiResponse = await getGPTResponse(prompt);
-
     await sendWhatsAppMessage(phone, aiResponse);
 
   } catch (err) {
