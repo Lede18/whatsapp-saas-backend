@@ -20,38 +20,33 @@ router.get('/', (req, res) => {
 
 // Endpoint para recibir mensajes de WhatsApp
 router.post('/', async (req, res) => {
-	console.log("✅ Recibido POST en /webhook");
-console.log("BODY:", JSON.stringify(req.body, null, 2));
   const data = req.body;
 
-  console.log("📥 LLEGÓ AL WEBHOOK:", JSON.stringify(data, null, 2));
-
-  if (data.object) {
+  try {
     const entry = data.entry?.[0];
-    const changes = entry?.changes?.[0];
-    const value = changes?.value;
-    const message = value?.messages?.[0];
+    const change = entry?.changes?.[0];
+    const message = change?.value?.messages?.[0];
 
-    if (message) {
-      const phone = message.from;
-      const text = message.text?.body;
-
-      console.log(`📞 De: ${phone}`);
-      console.log(`✉️  Mensaje: ${text}`);
-
-      const client = getClientByPhone(phone);
-
-      if (!client) {
-        console.log("⚠️ Número no registrado");
-      } else {
-        const prompt = `Cliente: ${client.name}. Pedido: ${text}`;
-        const aiResponse = await getGPTResponse(prompt);
-        console.log("🤖 GPT responde:", aiResponse);
-      }
+    if (!message) {
+      console.log("⚠️ No hay mensaje válido en el payload.");
+      return res.sendStatus(200);
     }
+
+    const phone = message.from;
+    const text = message.text?.body;
+
+    console.log("📥 Mensaje recibido:");
+    console.log(`📞 De: ${phone}`);
+    console.log(`✉️ Mensaje: ${text}`);
+
+    // Aquí puedes continuar con lógica: buscar cliente, responder, etc.
+
+  } catch (error) {
+    console.error("❌ Error procesando el mensaje:", error);
   }
 
   res.sendStatus(200);
 });
+
 
 module.exports = router;
