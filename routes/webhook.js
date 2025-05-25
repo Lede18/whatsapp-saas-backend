@@ -3,7 +3,6 @@ const router = express.Router();
 const { getGPTResponse } = require('../services/openaiService');
 const { sendWhatsAppMessage } = require('../services/whatsappService');
 const { getProductos } = require('../services/catalogService');
-const { agregarPedido } = require('../services/googleSheetsService');
 
 const VERIFY_TOKEN = "verifica123";
 
@@ -55,53 +54,48 @@ router.post('/', async (req, res) => {
     memoriaPedidos[phone].push(text);
 
     const textoNormalizado = text.toLowerCase();
-    const productos = getProductos();
 
-    // 📦 Detectar si el usuario quiere cerrar el pedido
+    // 📦 Detectar si el usuario quiere cerrar el pedido solo con articulos del catalogo
     if (
-      textoNormalizado.includes("enviar pedido") ||
-      textoNormalizado.includes("finalizar") ||
-      textoNormalizado.includes("eso es todo")
-    ) {
-      const articulosDetectados = memoriaPedidos[phone]
-        .map((texto) => {
-          const textoCliente = texto.toLowerCase();
-          const producto = productos.find(p =>
-            textoCliente.includes(p.nombre.toLowerCase()) ||
-            (p.alias && p.alias.some(alias => textoCliente.includes(alias.toLowerCase())))
-          );
-          return producto || null;
-        })
-        .filter(Boolean);
+  textoNormalizado.includes("enviar pedido") ||
+  textoNormalizado.includes("finalizar") ||
+  textoNormalizado.includes("eso es todo")
+) {
+  const articulosDetectados = memoriaPedidos[phone]
+  .map((texto) => {
+    const textoCliente = texto.toLowerCase();
 
-      if (articulosDetectados.length > 0) {
-        const mensajeResumen = `Este es tu pedido hasta ahora:\n${articulosDetectados.map(p => `- ${p.nombre} (${p.referencia})`).join("\n")}\n¿Confirmas?`;
+    const producto = productos.find(p =>
+      textoCliente.includes(p.nombre.toLowerCase()) ||
+      (p.alias && p.alias.some(alias => textoCliente.includes(alias.toLowerCase())))
+    );
 
-        await sendWhatsAppMessage(phone, mensajeResumen);
+    return producto ? `- ${producto.nombre} (${producto.referencia})` : null;
+  })
+  .filter(Boolean);
 
-        // ✅ Guardar pedido en Google Sheets
-        await agregarPedido({
-          telefono: phone,
-          productos: articulosDetectados
-        });
+  const mensajeResumen = articulosDetectados.length
+    ? `Este es tu pedido hasta ahora:\n${articulosDetectados.join("\n")}\n¿Confirmas?`
+    : "No he podido identificar ningún artículo válido en tu pedido. ¿Puedes reformularlo?";
 
-        // memoriaPedidos[phone] = []; // opcional si quieres limpiar
-      } else {
-        await sendWhatsAppMessage(phone, "No he podido identificar ningún artículo válido en tu pedido. ¿Puedes reformularlo?");
-      }
+  await sendWhatsAppMessage(phone, mensajeResumen);
 
-      return res.sendStatus(200);
-    }
+  // (opcional) limpiar memoria si se desea
+  // memoriaPedidos[phone] = [];
 
+  return res.sendStatus(200);
+}
+
+    const productos = getProductos();
     // 🤖 GPT: generar respuesta en mensajes normales
     const prompt = `Eres un asistente para una tienda de suministros hidráulicos y conducciones de agua llamada SAIGA.
 
-Este es el catálogo disponible:
-${productos.map(p => `- ${p.nombre} (${p.referencia})`).join("\n")}
+	Este es el catálogo disponible:
+	${productos.map(p => `- ${p.nombre} (${p.referencia})`).join("\n")}
 
-El cliente ha dicho: "${text}".
-Responde con educación y claridad, intentando relacionar lo que pide con los productos y referencias disponibles.
-`;
+	El cliente ha dicho: "${text}".
+	Responde con educación y claridad, intentando relacionar lo que pide con los productos y referencias disponibles.
+	`;
     const aiResponse = await getGPTResponse(prompt);
 
     await sendWhatsAppMessage(phone, aiResponse);
