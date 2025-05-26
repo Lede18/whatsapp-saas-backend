@@ -74,9 +74,8 @@ router.post('/', async (req, res) => {
 
     // 🔍 Buscar productos en el mensaje del cliente
     const productosDetectados = productos.filter(p =>
-      textoNormalizado.includes(p.nombre.toLowerCase()) ||
-      (p.alias && p.alias.some(alias => textoNormalizado.includes(alias.toLowerCase())))
-    );
+  p.alias && p.alias.some(alias => textoNormalizado.includes(alias.toLowerCase()))
+);
 
     // 🛒 Guardar productos + cantidad en memoria
     for (const producto of productosDetectados) {
