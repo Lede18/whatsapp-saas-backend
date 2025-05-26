@@ -3,12 +3,28 @@ const router = express.Router();
 const { getGPTResponse } = require('../services/openaiService');
 const { sendWhatsAppMessage } = require('../services/whatsappService');
 const { getProductos } = require('../services/catalogService');
-const { esConfirmacion } = require('../services/confirmacionService'); // ← ya lo tenías
+const { esConfirmacion } = require('../services/confirmacionService');
 
 const VERIFY_TOKEN = "verifica123";
 
 // 🧠 Memoria temporal por cliente (en RAM)
 const memoriaPedidos = {};
+
+// 📏 Detección de cantidad con expresiones regulares
+function detectarCantidad(texto, aliasProducto) {
+  const regex = new RegExp(`(\\d+)\\s*(unidades|uds|metros|m|x)?\\s*${aliasProducto}`, 'i');
+  const match = texto.match(regex);
+  return match ? parseInt(match[1]) : 1;
+}
+
+// 🎯 Formato de resumen del producto según si es tubería u otro
+function formatearLineaPedido(producto) {
+  const nombre = producto.nombre.toLowerCase();
+  if (nombre.includes("tubería") || nombre.includes("ml.") || nombre.includes("metro")) {
+    return `- ${producto.cantidad}m ${producto.nombre} (${producto.referencia})`;
+  }
+  return `- ${producto.cantidad}x ${producto.nombre} (${producto.referencia})`;
+}
 
 // 🔁 Verificación del Webhook (GET)
 router.get('/', (req, res) => {
@@ -48,39 +64,47 @@ router.post('/', async (req, res) => {
     console.log(`📞 De: ${phone}`);
     console.log(`✉️ Mensaje: ${text}`);
 
-    // 🧠 Guardar el mensaje en la memoria del cliente
+    // 🧠 Inicializar memoria del cliente si no existe
     if (!memoriaPedidos[phone]) {
       memoriaPedidos[phone] = [];
     }
-    memoriaPedidos[phone].push(text);
 
     const textoNormalizado = text.toLowerCase();
     const productos = getProductos();
 
-    // 📦 Detectar si el usuario quiere cerrar el pedido (clásico)
+    // 🔍 Buscar productos en el mensaje del cliente
+    const productosDetectados = productos.filter(p =>
+      textoNormalizado.includes(p.nombre.toLowerCase()) ||
+      (p.alias && p.alias.some(alias => textoNormalizado.includes(alias.toLowerCase())))
+    );
+
+    // 🛒 Guardar productos + cantidad en memoria
+    for (const producto of productosDetectados) {
+      const cantidad = detectarCantidad(textoNormalizado, producto.nombre.toLowerCase());
+      memoriaPedidos[phone].push({
+        nombre: producto.nombre,
+        referencia: producto.referencia,
+        cantidad
+      });
+    }
+
+    // 📦 Detectar si el usuario quiere cerrar el pedido
     const quiereFinalizar =
       textoNormalizado.includes("enviar pedido") ||
       textoNormalizado.includes("finalizar") ||
       textoNormalizado.includes("eso es todo");
 
-    // 🧠 O detectar por embeddings si es confirmación (semántico)
+    // 🧠 Detectar confirmación semántica con embeddings
     const confirmacionSemantica = await esConfirmacion(text);
 
     if (quiereFinalizar || confirmacionSemantica) {
       const articulosDetectados = memoriaPedidos[phone]
-        .map((texto) => {
-          const textoCliente = texto.toLowerCase();
-          const producto = productos.find(p =>
-            textoCliente.includes(p.nombre.toLowerCase()) ||
-            (p.alias && p.alias.some(alias => textoCliente.includes(alias.toLowerCase())))
-          );
-          return producto ? `- ${producto.nombre} (${producto.referencia})` : null;
-        })
-        .filter(Boolean);
+        .filter(p => typeof p === 'object' && p.nombre)
+        .map(formatearLineaPedido);
 
       const mensajeResumen = articulosDetectados.length
-        ? `Este es tu pedido hasta ahora:\n${articulosDetectados.join("\n")}\n¿Confirmas?`
-        : "No he podido identificar ningún artículo válido en tu pedido. ¿Puedes reformularlo?";
+        ? `✅ Este es tu pedido hasta ahora:\n${articulosDetectados.join("\n")}\n¿Confirmas?`
+        : "⚠️ No he podido identificar ningún artículo válido en tu pedido. ¿Puedes reformularlo?";
 
       await sendWhatsAppMessage(phone, mensajeResumen);
       return res.sendStatus(200);
