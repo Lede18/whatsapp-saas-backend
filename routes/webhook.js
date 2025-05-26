@@ -12,9 +12,16 @@ const memoriaPedidos = {};
 
 // 📏 Detección de cantidad con expresiones regulares
 function detectarCantidad(texto, aliasProducto) {
-  const regex = new RegExp(`(\\d+)\\s*(unidades|uds|metros|m|x)?\\s*${aliasProducto}`, 'i');
-  const match = texto.match(regex);
-  return match ? parseInt(match[1]) : 1;
+  const regexNumero = new RegExp(`(\\d+)\\s*(unidades|uds|metros|m|x)?\\s*${aliasProducto}`, 'i');
+  const regexUn = new RegExp(`\\b(un|una)\\s*${aliasProducto}`, 'i');
+
+  if (regexNumero.test(texto)) {
+    return parseInt(texto.match(regexNumero)[1]);
+  } else if (regexUn.test(texto)) {
+    return 1;
+  }
+
+  return 1;
 }
 
 // 🎯 Formato de resumen del producto según si es tubería u otro
@@ -68,13 +75,29 @@ router.post('/', async (req, res) => {
     if (!memoriaPedidos[phone]) {
       memoriaPedidos[phone] = [];
     }
+	
+	// 🔍 Detección flexible de productos por alias (ignora plurales y "de")
+// Normalización de texto y productos
+function normalizarTexto(texto) {
+  return texto
+    .toLowerCase()
+    .normalize("NFD") // elimina acentos
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\bde\b/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
 
-    const textoNormalizado = text.toLowerCase();
-    const productos = getProductos();
+const textoClienteNormalizado = normalizarTexto(text); // ✅ FALTABA ESTA LÍNEA
+const textoNormalizado = text.toLowerCase();
+const productos = getProductos();
 
-    // 🔍 Buscar productos en el mensaje del cliente
-    const productosDetectados = productos.filter(p =>
-  p.alias && p.alias.some(alias => textoNormalizado.includes(alias.toLowerCase()))
+// Buscar productos por alias normalizados
+const productosDetectados = productos.filter(p =>
+  p.alias && p.alias.some(alias => {
+    const aliasNormalizado = normalizarTexto(alias);
+    return textoClienteNormalizado.includes(aliasNormalizado);
+  })
 );
 
     // 🛒 Guardar productos + cantidad en memoria
