@@ -1,5 +1,6 @@
 const express = require('express');
 const webhookRoutes = require('./routes/webhook');
+const { inicializarConfirmaciones } = require('./services/confirmacionService'); //Embdings
 
 const app = express();
 const PORT = process.env.PORT || 8080;

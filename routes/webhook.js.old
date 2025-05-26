@@ -3,7 +3,6 @@ const router = express.Router();
 const { getGPTResponse } = require('../services/openaiService');
 const { sendWhatsAppMessage } = require('../services/whatsappService');
 const { getProductos } = require('../services/catalogService');
-const { esConfirmacion } = require('../services/confirmacionService'); // ← ya lo tenías
 
 const VERIFY_TOKEN = "verifica123";
 
@@ -57,16 +56,12 @@ router.post('/', async (req, res) => {
     const textoNormalizado = text.toLowerCase();
     const productos = getProductos();
 
-    // 📦 Detectar si el usuario quiere cerrar el pedido (clásico)
-    const quiereFinalizar =
+    // 📦 Detectar si el usuario quiere cerrar el pedido
+    if (
       textoNormalizado.includes("enviar pedido") ||
       textoNormalizado.includes("finalizar") ||
-      textoNormalizado.includes("eso es todo");
-
-    // 🧠 O detectar por embeddings si es confirmación (semántico)
-    const confirmacionSemantica = await esConfirmacion(text);
-
-    if (quiereFinalizar || confirmacionSemantica) {
+      textoNormalizado.includes("eso es todo")
+    ) {
       const articulosDetectados = memoriaPedidos[phone]
         .map((texto) => {
           const textoCliente = texto.toLowerCase();
