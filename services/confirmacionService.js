@@ -7,11 +7,12 @@ const frasesConfirmacion = [
   "eso mismo", "sí, adelante", "eso está bien", "vale, hazlo", "está perfecto",
   "eso es todo", "puedes enviarlo", "quiero eso", "es correcto",
   "finaliza el pedido", "confírmalo", "ya está bien", "sí, gracias",
+  "vale, tira", "si eso es", "gracias, ya está",
 
   // Catalán
   "sí", "si", "sí, ho vull", "d'acord", "això vull", "això mateix", "tira endavant",
   "correcte", "ja està bé", "està bé", "endavant", "confirmo", "ho confirmo",
-  "val", "sí, gràcies", "ja està", "pots enviar-ho"
+  "val", "sí, gràcies", "ja està", "pots enviar-ho", "va bé"
 ];
 
 // Calculamos sus embeddings una sola vez al arrancar

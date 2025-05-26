@@ -5,6 +5,9 @@ const { inicializarConfirmaciones } = require('./services/confirmacionService');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// 🧠 Inicializar embeddings al arrancar
+inicializarConfirmaciones();
+
 // Middleware nativo para parsear JSON
 app.use(express.json());
 
