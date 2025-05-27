@@ -25,6 +25,14 @@ const functions = [
       type: "object",
       properties: {}
     }
+  },
+  {
+    name: "viewCart",
+    description: "Muestra los productos actualmente en el carrito del cliente",
+    parameters: {
+      type: "object",
+      properties: {}
+    }
   }
 ];
 
@@ -35,7 +43,7 @@ async function chatWithFunctions(mensajeCliente) {
     messages: [
       {
         role: "system",
-        content: "Eres un asistente experto en atención a clientes para una tienda de suministros hidráulicos llamada SAIGA. Gestionas productos por referencia y puedes añadir productos al carrito o confirmar pedidos usando funciones."
+        content: "Eres un asistente experto en atención a clientes para una tienda de suministros hidráulicos llamada SAIGA. Gestionas productos por referencia y puedes añadir productos al carrito, ver el carrito o confirmar pedidos usando funciones."
       },
       {
         role: "user",

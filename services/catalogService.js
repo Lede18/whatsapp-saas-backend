@@ -1,25 +1,62 @@
-// Cargar productos desde JSON y exponerlos
-const fs = require('fs');
-const path = require('path');
+const { OpenAI } = require('openai');
 
-// Ruta al archivo JSON
-const productosPath = path.join(__dirname, '../db/productos.json');
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
-function getProductos() {
-  const raw = fs.readFileSync(productosPath, 'utf-8');
-  const productos = JSON.parse(raw);
-  return productos;
+// 🧠 Definición de funciones disponibles para la IA
+const functions = [
+  {
+    name: "addProduct", // ✅ nombre válido
+    description: "Añade un producto al carrito del cliente",
+    parameters: {
+      type: "object",
+      properties: {
+        referencia: { type: "string", description: "Referencia del producto (opcional si se proporciona descripción)" },
+        descripcion: { type: "string", description: "Descripción del producto, como nombre o alias conocido (opcional si se proporciona referencia)" },
+        cantidad: { type: "number", description: "Cantidad de unidades" }
+      },
+      required: ["cantidad"]
+    }
+  },
+  {
+    name: "confirmOrder", // ✅ nombre válido
+    description: "Confirma y finaliza el pedido del cliente",
+    parameters: {
+      type: "object",
+      properties: {}
+    }
+  },
+  {
+    name: "viewCart",
+    description: "Muestra los productos actualmente en el carrito del cliente",
+    parameters: {
+      type: "object",
+      properties: {}
+    }
+  }
+];
+
+// 🎯 Función principal que se llama desde el webhook
+async function chatWithFunctions(mensajeCliente) {
+  const respuesta = await openai.chat.completions.create({
+    model: "gpt-4-1106-preview",
+    messages: [
+      {
+        role: "system",
+        content: "Eres un asistente experto en atención a clientes para una tienda de suministros hidráulicos llamada SAIGA. Gestionas productos por referencia y puedes añadir productos al carrito, ver el carrito o confirmar pedidos usando funciones."
+      },
+      {
+        role: "user",
+        content: mensajeCliente
+      }
+    ],
+    functions,
+    function_call: "auto"
+  });
+
+  return respuesta.choices[0].message;
 }
 
-function buscarProductoPorAlias(entrada) {
-  const productos = getProductos();
-  const normalizar = txt => txt.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
-  const texto = normalizar(entrada);
+module.exports = { chatWithFunctions };
 
-  return productos.find(p =>
-    p.alias.some(alias => texto.includes(normalizar(alias))) ||
-    texto.includes(normalizar(p.nombre))
-  );
-}
-
-module.exports = { getProductos, buscarProductoPorAlias };
