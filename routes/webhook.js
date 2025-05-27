@@ -99,6 +99,15 @@ const productosDetectados = productos.filter(p =>
     return textoClienteNormalizado.includes(aliasNormalizado);
   })
 );
+// 🧠 Detectar cantidad genérica aunque no haya coincidencia de alias
+const regexCantidadGeneral = /(\d+)\s*(manguitos|manguito|tubos|tubo|reducciones|reducción|pieza|unidades|metros|m)/i;
+const matchGeneral = textoNormalizado.match(regexCantidadGeneral);
+
+if (matchGeneral) {
+  const cantidadDetectada = parseInt(matchGeneral[1]);
+  memoriaPedidos[phone]._ultimaCantidadSugerida = cantidadDetectada;
+  console.log("🧠 Cantidad detectada sin alias:", cantidadDetectada);
+}
 
     // 🛒 Guardar productos + cantidad en memoria
     for (const producto of productosDetectados) {
@@ -123,6 +132,21 @@ const productosDetectados = productos.filter(p =>
 
     // 🧠 Detectar confirmación semántica con embeddings
     const confirmacionSemantica = await esConfirmacion(text);
+	// ✅ Confirmación final: si ya hay productos y el cliente dice "confirmo"
+if (confirmacionSemantica && memoriaPedidos[phone].some(p => p?.nombre)) {
+  const articulosDetectados = memoriaPedidos[phone]
+    .filter(p => typeof p === 'object' && p.nombre)
+    .map(formatearLineaPedido);
+
+  const mensajeFinal = `✅ Pedido confirmado:\n${articulosDetectados.join("\n")}\nGracias por confiar en SAIGA. 🛠️`;
+
+  await sendWhatsAppMessage(phone, mensajeFinal);
+
+  // 🧹 Limpiar memoria y flags del carrito
+  delete memoriaPedidos[phone];
+
+  return res.sendStatus(200);
+}
 // 🧠 Si es una confirmación pero no se detectaron productos, usamos el último sugerido
 if (confirmacionSemantica && productosDetectados.length === 0) {
   const sugerido = memoriaPedidos[phone]._ultimoProductoSugerido;
