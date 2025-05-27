@@ -1,25 +1,17 @@
 const express = require('express');
 const webhookRoutes = require('./routes/webhook');
-const { inicializarConfirmaciones } = require('./services/confirmacionService'); //Embdings
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// 🧠 Inicializar embeddings al arrancar
-inicializarConfirmaciones();
-
-// Middleware nativo para parsear JSON
 app.use(express.json());
 
-// Ruta base de prueba (evita que Railway cierre el contenedor por inactividad)
 app.get('/', (req, res) => {
   res.send('🟢 Backend activo');
 });
 
-// Rutas de Webhook
 app.use('/webhook', webhookRoutes);
 
-// Inicio del servidor
 app.listen(PORT, () => {
   console.log(`🚀 Servidor activo en http://localhost:${PORT}`);
 });

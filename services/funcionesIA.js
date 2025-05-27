@@ -1,14 +1,14 @@
 // Funciones que GPT puede ejecutar al hacer function_call
 const carrito = {}; // 🛒 Carrito en memoria temporal (por número)
 
-function añadirProducto({ referencia, cantidad }, phone) {
+function addProduct({ referencia, cantidad }, phone) {
   if (!carrito[phone]) carrito[phone] = [];
 
   carrito[phone].push({ referencia, cantidad });
   return `✅ Se han añadido ${cantidad} unidades del producto con referencia ${referencia} a tu pedido.`;
 }
 
-function confirmarPedido(_, phone) {
+function confirmOrder(_, phone) {
   if (!carrito[phone] || carrito[phone].length === 0) {
     return "⚠️ No hay productos en tu pedido para confirmar.";
   }
@@ -19,17 +19,15 @@ function confirmarPedido(_, phone) {
 
   delete carrito[phone]; // 🧹 Limpiar carrito al confirmar
 
-  return `✅ Pedido confirmado:
-${resumen}
-Gracias por confiar en SAIGA. 🛠️`;
+  return `✅ Pedido confirmado:\n${resumen}\nGracias por confiar en SAIGA. 🛠️`;
 }
 
 async function ejecutarFuncion(function_call, phone) {
   const nombre = function_call.name;
   const args = JSON.parse(function_call.arguments || '{}');
 
-  if (nombre === "añadirProducto") return añadirProducto(args, phone);
-  if (nombre === "confirmarPedido") return confirmarPedido(args, phone);
+  if (nombre === "addProduct") return addProduct(args, phone);
+  if (nombre === "confirmOrder") return confirmOrder(args, phone);
 
   return "⚠️ No entendí la acción que debo realizar.";
 }

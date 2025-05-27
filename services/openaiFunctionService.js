@@ -7,7 +7,7 @@ const openai = new OpenAI({
 // 🧠 Definición de funciones disponibles para la IA
 const functions = [
   {
-    name: "añadirProducto",
+    name: "addProduct", // ✅ nombre válido
     description: "Añade un producto al carrito del cliente",
     parameters: {
       type: "object",
@@ -19,7 +19,7 @@ const functions = [
     }
   },
   {
-    name: "confirmarPedido",
+    name: "confirmOrder", // ✅ nombre válido
     description: "Confirma y finaliza el pedido del cliente",
     parameters: {
       type: "object",
@@ -31,7 +31,7 @@ const functions = [
 // 🎯 Función principal que se llama desde el webhook
 async function chatWithFunctions(mensajeCliente) {
   const respuesta = await openai.chat.completions.create({
-    model: "gpt-4-1106-preview", // o "gpt-3.5-turbo-1106"
+    model: "gpt-4-1106-preview",
     messages: [
       {
         role: "system",
@@ -46,8 +46,7 @@ async function chatWithFunctions(mensajeCliente) {
     function_call: "auto"
   });
 
-  const respuestaIA = respuesta.choices[0].message;
-  return respuestaIA;
+  return respuesta.choices[0].message;
 }
 
 module.exports = { chatWithFunctions };
