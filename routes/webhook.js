@@ -128,13 +128,14 @@ if (confirmacionSemantica && productosDetectados.length === 0) {
   const sugerido = memoriaPedidos[phone]._ultimoProductoSugerido;
   const cantidadSugerida = memoriaPedidos[phone]._ultimaCantidadSugerida || 1;
 
-  if (sugerido) {
+  if (sugerido && !memoriaPedidos[phone]._sugeridoConfirmado) {
     memoriaPedidos[phone].push({
       nombre: sugerido.nombre,
       referencia: sugerido.referencia,
       cantidad: cantidadSugerida
     });
-    console.log(`✅ Producto confirmado por "sí": ${cantidadSugerida}x ${sugerido.nombre}`);
+    memoriaPedidos[phone]._sugeridoConfirmado = true;
+    console.log(`✅ Producto confirmado una sola vez: ${cantidadSugerida}x ${sugerido.nombre}`);
   }
 }
     if (quiereFinalizar || confirmacionSemantica) {
@@ -149,6 +150,10 @@ if (confirmacionSemantica && productosDetectados.length === 0) {
       await sendWhatsAppMessage(phone, mensajeResumen);
       return res.sendStatus(200);
     }
+	// 🧹 Limpiar flags de sugerencia confirmada para evitar duplicados
+delete memoriaPedidos[phone]._ultimoProductoSugerido;
+delete memoriaPedidos[phone]._ultimaCantidadSugerida;
+delete memoriaPedidos[phone]._sugeridoConfirmado;
 
     // 🤖 GPT: generar respuesta en mensajes normales
     const prompt = `Eres un asistente para una tienda de suministros hidráulicos y conducciones de agua llamada SAIGA.
