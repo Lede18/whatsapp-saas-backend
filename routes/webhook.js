@@ -102,13 +102,18 @@ const productosDetectados = productos.filter(p =>
 
     // 🛒 Guardar productos + cantidad en memoria
     for (const producto of productosDetectados) {
-      const cantidad = detectarCantidad(textoNormalizado, producto.nombre.toLowerCase());
-      memoriaPedidos[phone].push({
-        nombre: producto.nombre,
-        referencia: producto.referencia,
-        cantidad
-      });
-    }
+  const cantidad = detectarCantidad(textoNormalizado, producto.nombre.toLowerCase());
+
+  memoriaPedidos[phone].push({
+    nombre: producto.nombre,
+    referencia: producto.referencia,
+    cantidad
+  });
+
+  // 🧠 Guardar último producto y cantidad sugerida para confirmar más tarde
+  memoriaPedidos[phone]._ultimoProductoSugerido = producto;
+  memoriaPedidos[phone]._ultimaCantidadSugerida = cantidad;
+}
 
     // 📦 Detectar si el usuario quiere cerrar el pedido
     const quiereFinalizar =
@@ -118,7 +123,20 @@ const productosDetectados = productos.filter(p =>
 
     // 🧠 Detectar confirmación semántica con embeddings
     const confirmacionSemantica = await esConfirmacion(text);
+// 🧠 Si es una confirmación pero no se detectaron productos, usamos el último sugerido
+if (confirmacionSemantica && productosDetectados.length === 0) {
+  const sugerido = memoriaPedidos[phone]._ultimoProductoSugerido;
+  const cantidadSugerida = memoriaPedidos[phone]._ultimaCantidadSugerida || 1;
 
+  if (sugerido) {
+    memoriaPedidos[phone].push({
+      nombre: sugerido.nombre,
+      referencia: sugerido.referencia,
+      cantidad: cantidadSugerida
+    });
+    console.log(`✅ Producto confirmado por "sí": ${cantidadSugerida}x ${sugerido.nombre}`);
+  }
+}
     if (quiereFinalizar || confirmacionSemantica) {
       const articulosDetectados = memoriaPedidos[phone]
         .filter(p => typeof p === 'object' && p.nombre)
@@ -143,6 +161,17 @@ Responde con educación y claridad, intentando relacionar lo que pide con los pr
 `;
 
     const aiResponse = await getGPTResponse(prompt);
+	// 🧠 Intenta detectar si GPT sugirió un único producto del catálogo
+const productoSugerido = productos.find(p =>
+  aiResponse.toLowerCase().includes(p.nombre.toLowerCase()) ||
+  (p.alias && p.alias.some(alias => aiResponse.toLowerCase().includes(alias.toLowerCase())))
+);
+
+if (productoSugerido) {
+  memoriaPedidos[phone]._ultimoProductoSugerido = productoSugerido;
+} else {
+  delete memoriaPedidos[phone]._ultimoProductoSugerido;
+}
     await sendWhatsAppMessage(phone, aiResponse);
 
   } catch (err) {
